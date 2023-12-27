@@ -2,7 +2,10 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 const {validateUserCreation , hashPassword} = require('../utils/authincateUser');
 const { validateLogin } = require('../utils/validate-login');
+const { Status } = require('@prisma/client');
+
 const adminController = {
+
     createCategory: async (req, res) => {
         try {
             const { name } = req.body; 
@@ -13,8 +16,11 @@ const adminController = {
             return  res.json(category);
             
         } catch (error) {
+            if (error.code === 'P2002' && error.meta.target === 'Category_name_key') {
+                return res.status(400).json({ error: 'Category with this name already exists' });
+            }
             console.error(error);
-            res.status(500).json({ error: 'Internal Server Error' });
+            res.status(500).json({ error});
         }
     },
     deleteCategory: async (req, res) => {
@@ -23,6 +29,7 @@ const adminController = {
             const deleteCategory = await prisma.category.delete({
                 where: { id: parseInt(categoryId, 10) },
             });
+            
             console.log("Category Deleted ");
 
             return res.json(deleteCategory);
@@ -31,7 +38,7 @@ const adminController = {
             res.status(500).json({ error: 'Internal Server Error' });
         }
     },
-    changeCategoryStatus: async (req, res) => {
+    changeCategoryStatus :async (req, res) => {
         try {
             const { categoryId } = req.params;
             const categoryIdInt = parseInt(categoryId, 10);
@@ -46,7 +53,7 @@ const adminController = {
             }
     
             console.log('Existing category:', existingCategory);
-            const newStatus = !existingCategory.status;
+            const newStatus = existingCategory.status === Status.ACTIVE ? Status.INACTIVE : Status.ACTIVE;
     
             const updatedCategory = await prisma.category.update({
                 where: { id: categoryIdInt },
@@ -59,8 +66,10 @@ const adminController = {
         } catch (error) {
             console.error(error);
             return res.status(500).json({ error: 'Internal Server Error' });
+        } finally {
+            await prisma.$disconnect();
         }
-    }, 
+    },
     getAllCategory: async (req, res) => {
         try {
             const category = await prisma.category.findMany();
@@ -194,35 +203,37 @@ const adminController = {
             res.status(500).json({ error: 'Internal Server Error' });
         }
     },
-    changeUserStatus: async (req, res) => {
-        try {
-            const { userId } = req.params;
-            const userIdInt = parseInt(userId, 10);
-    
-            const existingUser = await prisma.user.findUnique({
-                where: { id: userIdInt },
-            });
-    
-            if (!existingUser) {
-                console.log('User not found.');
-                return res.status(404).json({ error: 'User not found.' });
-            }
-    
-            console.log('Existing User:', existingUser);
-            const newStatus = !existingUser.status;
-    
-            const updatedStatus = await prisma.user.update({
-                where: { id: userIdInt },
-                data: { status: newStatus },
-            });
-    
-            console.log('Updated User:', updatedStatus);
-    
-            res.json(updatedStatus);
-        } catch (error) {
-            console.error(error);
-            res.status(500).json({ error: 'Internal Server Error' });
-        }},
+    changeUserStatus: async (req, res) => {try {
+        const { userId } = req.params;
+        const userIdInt = parseInt(userId, 10);
+
+        const existingUser = await prisma.user.findUnique({
+            where: { id: userIdInt },
+        });
+
+        if (!existingUser) {
+            console.log('User not found.');
+            return res.status(404).json({ error: 'User not found.' });
+        }
+
+        console.log('Existing User:', existingUser);
+
+        const newStatus = existingUser.status === Status.ACTIVE ? Status.INACTIVE : Status.ACTIVE;
+
+        const updatedStatus = await prisma.user.update({
+            where: { id: userIdInt },
+            data: { status: newStatus },
+        });
+
+        console.log('Updated User:', updatedStatus);
+
+        res.json(updatedStatus);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    } finally {
+        await prisma.$disconnect();
+    }},
     getAllUsers: async (req, res) => {
         try {
             const users = await prisma.user.findMany();
