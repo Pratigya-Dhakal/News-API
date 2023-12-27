@@ -1,7 +1,7 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 const {validateUserCreation , hashPassword} = require('../utils/authincateUser');
-const { authenticateUser } = require('../middleware/authadmin.middlewere');
+const { validateLogin } = require('../utils/validate-login');
 const adminController = {
     createCategory: async (req, res) => {
         try {
@@ -116,7 +116,7 @@ const adminController = {
         },
     ],
     loginUser: [
-        authenticateUser,
+        validateLogin,
         (req, res) => {
             const { user, token } = req;
             const { role } = user;

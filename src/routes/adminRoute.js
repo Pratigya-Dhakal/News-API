@@ -1,7 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const adminController = require('../controllers/adminController');
-const { authenticateUser } = require('../middleware/authadmin.middlewere');
+const { authenticateUser } = require('../middleware/auth.middlewere');
+router.post('/login', adminController.loginUser);
+
+// Apply authenticateUser middleware to all routes defined after this point
+router.use(authenticateUser);
 
 //category 
 router.post('/create-category', adminController.createCategory);
@@ -11,7 +15,6 @@ router.get('/get-category', adminController.getAllCategory);
 
 // user
 router.post('/create-user', adminController.createUser);
-router.post('/login', adminController.loginUser);
 router.patch('/change-user-status/:userId', adminController.changeUserStatus);
 router.get('/get-users', adminController.getAllUsers);
 router.patch('/update-password/:userId', adminController.updatePassword);
