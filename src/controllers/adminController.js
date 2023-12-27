@@ -1,17 +1,17 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
-
+const {validateUserCreation , hashPassword} = require('../utils/authincateUser');
+const { authenticateUser } = require('../middleware/authadmin.middlewere');
 const adminController = {
     createCategory: async (req, res) => {
         try {
-            const { name } = req.body;
+            const { name } = req.body; 
             const category = await prisma.category.create({
                 data: { name },
             });
             console.log("Category Created");
             return  res.json(category);
             
-
         } catch (error) {
             console.error(error);
             res.status(500).json({ error: 'Internal Server Error' });
@@ -70,36 +70,74 @@ const adminController = {
             res.status(500).json({ error: 'Internal Server Error' });
         }
     },
-    createUser: async (req, res) => {
-        try {
-            const { username, email, password, role, status } = req.body;
-            const user = await prisma.user.create({
-                data: { username, email, password, role, status },
-            });
-            let message;
+    createUser: [
+        validateUserCreation,
+        hashPassword, 
+        async (req, res) => {
+            try {
+                const { username, email, role, status } = req.body;
+
+                const hashedPassword = req.hashedPassword;
+
+                const user = await prisma.user.create({
+                    data: { username, email, password: hashedPassword, role, status },
+                    select: {
+                        id: true,
+                        username: true,
+                        email : true,
+                        role :true,
+                        status :true
+                    }
+                });
+
+                let message;
+
+                switch (role) {
+                    case 'ADMIN':
+                        message = 'Admin created';
+                        break;
+                    case 'AUTHOR':
+                        message = 'Author created';
+                        break;
+                    case 'USER':
+                        message = 'User created';
+                        break;
+                    default:
+                        message = 'Role not specified';
+                        break;
+                }
+
+                res.json({ message, user });
+                console.log(message);
+            } catch (error) {
+                console.error(error);
+                res.status(500).json({ error: 'Internal Server Error' });
+            }
+        },
+    ],
+    loginUser: [
+        authenticateUser,
+        (req, res) => {
+            const { user, token } = req;
+            const { role } = user;
 
             switch (role) {
                 case 'ADMIN':
-                    message = 'Admin created';
+                    res.json({ message: 'Admin login successful', user, token });
                     break;
                 case 'AUTHOR':
-                    message = 'Author created';
+                    res.json({ message: 'Author login successful', user, token });
                     break;
                 case 'USER':
-                    message = 'User created';
+                    res.json({ message: 'USER  login successful', user, token });
                     break;
                 default:
-                    message = 'Role not specified';
+                    res.status(403).json({ error: 'Forbidden' });
                     break;
-                }
-        
-            res.json({ message, user });
-            console.log(message);
-        } catch (error) {
-            console.error(error);
-            res.status(500).json({ error: 'Internal Server Error' });
-        }
-    },
+            }
+        },
+    ],
+
     viewPosts: async (req, res) => {
         try {
             const posts = await prisma.article.findMany({
@@ -139,50 +177,7 @@ const adminController = {
             res.status(500).json({ error: 'Internal Server Error' });
         }
     },
-    changeAuthorStatus: async (req, res) => {
-        try {
-            const { authorId } = req.params;
-            const { newStatus } = req.body;
-            const updatedAuthor = await prisma.user.update({
-                where: { id: parseInt(authorId, 10) },
-                data: { status: newStatus },
-            });
-            res.json(updatedAuthor);
-            res.end("Status Changed");
-        } catch (error) {
-            console.error(error);
-            res.status(500).json({ error: 'Internal Server Error' });
-        }
-    },
-        changeUserStatus: async (req, res) => {
-        try {
-            const { userId } = req.params;
-            const userIdInt = parseInt(userId, 10);
-    
-            const existingUser = await prisma.category.findUnique({
-                where: { id: userIdInt },
-            });
-    
-            if (!existingUser) {
-                console.log('User not found.');
-                return res.status(404).json({ error: 'User not found.' });
-            }
-    
-            console.log('Existing User:', existingUser);
-            const newStatus = !existingUser.status;
-    
-            const updatedStatus= await prisma.user.update({
-                where: { id: userIdInt },
-                data: { status: newStatus },
-            });
-    
-            console.log('Updated User:', updatedStatus);
-    
-            res.json(updatedStatus);
-        } catch (error) {
-            console.error(error);
-            res.status(500).json({ error: 'Internal Server Error' });
-        }},
+
     updatePassword: async (req, res) => {
         try {
             const { userId } = req.params;
@@ -199,6 +194,35 @@ const adminController = {
             res.status(500).json({ error: 'Internal Server Error' });
         }
     },
+    changeUserStatus: async (req, res) => {
+        try {
+            const { userId } = req.params;
+            const userIdInt = parseInt(userId, 10);
+    
+            const existingUser = await prisma.user.findUnique({
+                where: { id: userIdInt },
+            });
+    
+            if (!existingUser) {
+                console.log('User not found.');
+                return res.status(404).json({ error: 'User not found.' });
+            }
+    
+            console.log('Existing User:', existingUser);
+            const newStatus = !existingUser.status;
+    
+            const updatedStatus = await prisma.user.update({
+                where: { id: userIdInt },
+                data: { status: newStatus },
+            });
+    
+            console.log('Updated User:', updatedStatus);
+    
+            res.json(updatedStatus);
+        } catch (error) {
+            console.error(error);
+            res.status(500).json({ error: 'Internal Server Error' });
+        }},
     getAllUsers: async (req, res) => {
         try {
             const users = await prisma.user.findMany();
