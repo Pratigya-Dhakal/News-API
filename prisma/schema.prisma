@@ -15,6 +15,10 @@ enum Role {
   AUTHOR
   USER
 }
+enum Status {
+  ACTIVE
+  INACTIVE
+}
 
 model User {
   id       Int       @id @default(autoincrement())
@@ -22,7 +26,7 @@ model User {
   email    String    @unique
   password String
   role     Role
-  status   Boolean
+  status   Boolean @default(true)
   articles Article[] 
   comments Comment[] 
 }
@@ -37,7 +41,7 @@ model Article {
   categoryName String @unique
   publishedAt  DateTime @default(now())
   updatedAt DateTime @updatedAt
-  status  Boolean
+  status  Boolean @default(true)
   author     User      @relation(fields: [authorId], references: [id]) 
   category   Category?  @relation(fields: [categoryId], references: [id]) 
   comments   Comment[]
@@ -58,7 +62,8 @@ model Comment {
   articleId Int
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
-  status   Boolean
+  status   Boolean @default(true)
+
   user      User      @relation(fields: [userId], references: [id])
   article   Article   @relation(fields: [articleId], references: [id]) 
 }
