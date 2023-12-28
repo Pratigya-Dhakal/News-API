@@ -2,7 +2,8 @@ const express = require('express');
 const router = express.Router();
 const adminController = require('../controllers/adminController');
 const { authenticateUser } = require('../middleware/auth.middlewere');
-router.post('/login', adminController.loginUser);
+const { validateLogin } = require('../utils/validate-login');
+router.post('/login',adminController.loginAdmin);
 
 // Apply authenticateUser middleware to all routes defined after this point
 router.use(authenticateUser);
