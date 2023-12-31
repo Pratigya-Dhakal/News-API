@@ -38,7 +38,7 @@ model Article {
   imageData  String?
   authorId   Int
   categoryId Int?
-  categoryName String @unique
+  categoryName String 
   publishedAt  DateTime @default(now())
   updatedAt DateTime @updatedAt
   status   Status  @default(ACTIVE)
