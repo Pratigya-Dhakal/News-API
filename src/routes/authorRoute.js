@@ -2,7 +2,6 @@ const express = require('express');
 const router = express.Router();
 const authorController = require('../controllers/authorController');
 const { authenticateAuthor } = require('../middleware/authorAuth.middlewere');
-
 router.post('/login', authorController.loginAuthor);
 
 router.use(authenticateAuthor);

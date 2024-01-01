@@ -1,9 +1,11 @@
 const { PrismaClient } = require('@prisma/client');
+const multer = require('multer');
 const prisma = new PrismaClient();
 const bcrypt = require('bcrypt');
 const { loginValidationMiddleware } = require('../utils/validate-login');
 const { generateToken } = require('../utils/jwt');
-const {hashUpdatePassword } = require('../middleware/hashPassword.middlewere')
+const {hashUpdatePassword } = require('../middleware/hashPassword.middlewere');
+const upload = require('../configuration/multer.config'); 
 
 const authorController = {
     loginAuthor: [
@@ -51,64 +53,76 @@ const authorController = {
         }
     ],
     createArticle: async (req, res) => {
-        try {
-            const { title, content, imageData, categoryId, status } = req.body;
-            const authorId = req.user.id;
-            const authorRole = req.user.role;
-    
-            if (authorRole !== 'AUTHOR') {
-                return res.status(403).json({ error: 'Forbidden' });
+        const uploadMiddleware = upload.single('imageData');
+        
+        uploadMiddleware(req, res, async (err) => {
+            if (err instanceof multer.MulterError) {
+                return res.status(400).json({ error: 'Multer error', details: err.message });
+            } else if (err) {
+                return res.status(500).json({ error: 'Internal server error', details: err.message });
             }
     
-            if (!authorId) {
-                return res.status(400).json({ error: 'Invalid user ID' });
-            }
+            try {
+                const { title, content, categoryId, status } = req.body;
+                const authorId = req.user.id;
+                const authorRole = req.user.role;
     
-            let existingCategory;
-            let categoryName;
+                if (authorRole !== 'AUTHOR') {
+                    return res.status(403).json({ error: 'Forbidden', details: 'User is not authorized to create an article.' });
+                }
     
-            if (categoryId) {
-                existingCategory = await prisma.category.findUnique({
-                    where: {
-                        id: categoryId,
+                if (!authorId) {
+                    return res.status(400).json({ error: 'Invalid user ID', details: 'User ID is missing.' });
+                }
+    
+                let existingCategory;
+                let categoryName;
+    
+                if (categoryId) {
+                    existingCategory = await prisma.category.findUnique({
+                        where: {
+                            id: parseInt(categoryId),
+                        },
+                    });
+    
+                    if (!existingCategory) {
+                        return res.status(400).json({ error: 'Invalid category ID', details: 'Category not found.' });
+                    }
+    
+                    categoryName = existingCategory.name;
+                }
+    
+                const createdArticle = await prisma.article.create({
+                    data: {
+                        title,
+                        content,
+                        imageData: req.file ? req.file.filename : undefined,
+                        category: categoryId
+                            ? {
+                                connect: {
+                                    id: parseInt(categoryId),
+                                },
+                            }
+                            : undefined,
+                        categoryName,
+                        author: {
+                            connect: {
+                                id: authorId,
+                            },
+                        },
+                        status,
                     },
                 });
     
-                if (!existingCategory) {
-                    return res.status(400).json({ error: 'Invalid category ID' });
-                }
-    
-                categoryName = existingCategory.name;
+                res.status(201).json({ message: 'Article created successfully', article: createdArticle });
+            } catch (error) {
+                console.error('Error creating article:', error);
+                res.status(500).json({ error: 'Internal server error', details: error.message });
             }
-    
-            const createdArticle = await prisma.article.create({
-                data: {
-                    title,
-                    content,
-                    imageData,
-                    category: categoryId
-                        ? {
-                            connect: {
-                                id: categoryId,
-                            },
-                        }
-                        : undefined,
-                    categoryName,
-                    author: {
-                        connect: {
-                            id: authorId,
-                        },
-                    },
-                    status,
-                },
-            });
-    
-            res.status(201).json({ message: 'Article created successfully', article: createdArticle });
-        } catch (error) {
-            console.error('Error creating article:', error);
-            res.status(500).json({ error: 'Internal server error' });
-        }
+        });
     },
+    
+    
     viewALLPosts: async (req, res) => {
         try {
             const posts = await prisma.article.findMany({
