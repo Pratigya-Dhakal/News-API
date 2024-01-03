@@ -3,7 +3,7 @@ const multer = require('multer');
 const prisma = new PrismaClient();
 const bcrypt = require('bcrypt');
 const { loginValidationMiddleware } = require('../utils/validate-login');
-const { generateToken } = require('../utils/jwt');
+const { generateTokens } = require('../utils/jwt');
 const {hashUpdatePassword } = require('../middleware/hashPassword.middlewere');
 const upload = require('../configuration/multer.config'); 
 
@@ -30,7 +30,6 @@ const authorController = {
                     return res.status(401).json({ error: 'Invalid email' });
                 }
     
-                // Check if the user has the role 'author'
                 if (user.role !== 'AUTHOR') {
                     return res.status(403).json({ error: 'Access Denied. Only AUTHORS are allowed to log in from this route.' });
                 }
@@ -39,13 +38,19 @@ const authorController = {
                 if (!passwordMatch) {
                     return res.status(401).json({ error: 'Invalid Password' });
                 }
-                
-                const token = generateToken(user.id, user.role);
+    
+                const { accessToken, refreshToken } = generateTokens(user.id, user.role);
     
                 const { id, username, role, status } = user;
-                const responseData = { message: 'Login successful', user: { id, username, email: user.email, role, status }, token };
+                const responseData = {
+                    message: 'Login successful',
+                    user: { id, username, email: user.email, role, status },
+                    accessToken,
+                    refreshToken,
+                };
     
                 res.status(200).json(responseData);
+    
             } catch (error) {
                 console.error('Error during login:', error);
                 res.status(500).json({ error: 'Internal server error' });
@@ -126,14 +131,18 @@ const authorController = {
     viewALLPosts: async (req, res) => {
         try {
             const posts = await prisma.article.findMany({
-                include: { author:  {
-                    select: {
-                        id: true,
-                        username: true,
+                include: {
+                    author: {
+                        select: {
+                            id: true,
+                            username: true,
                         },
-                    }, comments: true },
+                    },
+                    comments: true,
+                },
             });
-            console.log("Post");
+    
+    
             res.json(posts);
         } catch (error) {
             console.error(error);

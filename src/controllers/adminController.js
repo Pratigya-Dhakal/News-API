@@ -3,7 +3,7 @@ const prisma = new PrismaClient();
 const {validateUserCreation , hashPassword} = require('../utils/authincateUser');
 const bcrypt = require('bcrypt');
 const { loginValidationMiddleware } = require('../utils/validate-login');
-const { generateToken } = require('../utils/jwt');
+const jwtUtils = require('../utils/jwt');
 const { Status } = require('@prisma/client');
 
 const adminController = {
@@ -126,12 +126,12 @@ const adminController = {
             }
         },
     ],
-    loginAdmin: [
+    loginAdmin :[
         loginValidationMiddleware,
         async (req, res) => {
             try {
                 const { email, password } = req.body;
-        
+    
                 const user = await prisma.user.findUnique({
                     where: { email },
                     select: {
@@ -143,31 +143,35 @@ const adminController = {
                         password: true,
                     },
                 });
-        
+    
                 if (!user) {
                     return res.status(401).json({ error: 'Invalid email' });
                 }
-                // Check if the user has the role 'author'
+    
                 if (user.role !== 'ADMIN') {
-                    return res.status(403).json({ error: 'Access Denied. Only ADMIN are allowed to log in from this route.' });
+                    return res.status(403).json({ error: 'Access Denied. Only ADMINs are allowed to log in from this route.' });
                 }
-        
+    
                 const passwordMatch = await bcrypt.compare(password, user.password);
                 if (!passwordMatch) {
                     return res.status(401).json({ error: 'Invalid Password' });
                 }
-                const token = generateToken(user.id, user.role);
-        
+                
+                const { accessToken, refreshToken } = jwtUtils.generateTokens(user.id, user.role);
+    
                 const { id, username, role, status } = user;
-                const responseData = { message: 'Login successful', user: { id, username, email: user.email, role, status }, token };
+                const responseData = {
+                    message: 'Login successful',
+                    user: { id, username, email: user.email, role, status },
+                    tokens: { accessToken, refreshToken },
+                };
     
                 res.status(200).json(responseData);
             } catch (error) {
                 console.error('Error during login:', error);
                 res.status(500).json({ error: 'Internal server error' });
             }
-        }
-
+        },
     ],
 
     viewPosts: async (req, res) => {
