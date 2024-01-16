@@ -1,6 +1,7 @@
 require('dotenv').config();
 const SECRET = process.env.JWT_SECRET;
 const REFRESH_SECRET = process.env.JWT_REFRESH_SECRET;
+const  VERIFICATION_SECRET = process.env.JWT_VERIFICATION_SECRET
 const jwt = require('jsonwebtoken');
 
 const generateTokens = (userId, role, expiresIn = '2h', refreshExpiresIn = '7d') => {
@@ -9,10 +10,24 @@ const generateTokens = (userId, role, expiresIn = '2h', refreshExpiresIn = '7d')
 
     return { accessToken, refreshToken };
 };
+const generateVerificationToken = (userId, role, expiresIn = '5m') => {
+    const verificationToken = jwt.sign({ userId, role }, VERIFICATION_SECRET, { expiresIn });
+    return { verificationToken };
+    };
+
 
 const verifyToken = (token) => {
     try {
         const decoded = jwt.verify(token, SECRET);
+        return decoded;
+    } catch (error) {
+        console.error('Token verification error:', error);
+        return null;
+    }
+};
+const verifyVerificationToken = (token) => {
+    try {
+        const decoded = jwt.verify(token, VERIFICATION_SECRET);
         return decoded;
     } catch (error) {
         console.error('Token verification error:', error);
@@ -30,4 +45,4 @@ const verifyRefreshToken = (refreshToken) => {
     }
 };
 
-module.exports = { generateTokens, verifyToken, verifyRefreshToken };
+module.exports = { generateTokens,generateVerificationToken, verifyToken, verifyRefreshToken, verifyVerificationToken };
