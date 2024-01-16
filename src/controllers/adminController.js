@@ -5,7 +5,7 @@ const bcrypt = require('bcrypt');
 const { loginValidationMiddleware } = require('../utils/validate-login');
 const jwtUtils = require('../utils/jwt');
 const { Status } = require('@prisma/client');
-
+const emailService = require('../middleware/emailService');
 const adminController = {
 
     createCategory: async (req, res) => {
@@ -117,10 +117,13 @@ const adminController = {
                         message = 'Role not specified';
                         break;
                 }
+                const { verificationToken } = jwtUtils.generateVerificationToken(user.id, role);
+
+                await emailService.sendVerificationEmail(email, verificationToken);
 
                 res.json({ message, user });
                 console.log(message);
-            } catch (error) {
+                } catch (error) {
                 console.error(error);
                 res.status(500).json({ error: 'Internal Server Error' });
             }

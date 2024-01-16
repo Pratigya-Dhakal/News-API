@@ -13,12 +13,13 @@ const authenticateAuthor = async (req, res, next) => {
         if (!authHeader || !authHeader.startsWith('Bearer ')) {
             return res.status(401).json({ error: 'Unauthorized: Invalid token format' });
         }
+        
 
         const token = authHeader.split(' ')[1];
 
         if (!token) {
             return res.status(401).json({ error: 'Unauthorized: Missing token' });
-        }
+        } 
 
         let decoded;
 
