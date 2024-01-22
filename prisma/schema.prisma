@@ -20,6 +20,11 @@ enum Status {
   INACTIVE
 }
 
+enum Verify {
+  VERIFIED
+  NOTVERIFIED
+}
+  
 model User {
   id       Int       @id @default(autoincrement())
   username String    @unique
@@ -27,6 +32,7 @@ model User {
   password String
   role     Role
   status   Status  @default(ACTIVE)
+  verify  Verify  @default(NOTVERIFIED) 
   articles Article[] 
   comments Comment[] 
 }
