@@ -17,7 +17,12 @@ function sendVerificationEmail(email, token) {
         from: EMAIL,
         to: email,
         subject: 'Account Verification',
-        text: `Click the following link to verify your account: ${token}`,
+        text: `Link will be expired in 5 minutes.Thank You.
+        Click the following link to verify your account: localhost:8000/api/admin/verify/${token}
+
+        Regards,
+        News-Api Team
+        `,
     };
 
     transporter.sendMail(mailOptions, (error, info) => {
