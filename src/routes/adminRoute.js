@@ -2,9 +2,12 @@ const express = require('express');
 const router = express.Router();
 const adminController = require('../controllers/adminController');
 const { authenticateUser } = require('../middleware/auth.middlewere');
+const { verifyUser } = require('../configuration/emailVerification');
+const { resendVerification } = require('../services/resendVerification');
 router.post('/login',adminController.loginAdmin);
+router.get('/verify/:token', verifyUser);
+router.post('/resend-verification-email', resendVerification);
 
-// Apply authenticateUser middleware to all routes defined after this point
 router.use(authenticateUser);
 
 //category 
