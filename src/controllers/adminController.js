@@ -6,6 +6,8 @@ const { loginValidationMiddleware } = require('../utils/validate-login');
 const jwtUtils = require('../utils/jwt');
 const { Status } = require('@prisma/client');
 const emailService = require('../middleware/emailService');
+const {hashUpdatePassword } = require('../middleware/hashPassword.middlewere');
+
 const adminController = {
 
     createCategory: async (req, res) => {
@@ -224,22 +226,36 @@ const adminController = {
         }
     },
 
-    updatePassword: async (req, res) => {
-        try {
-            const { userId } = req.params;
-            const { newPassword } = req.body;
-            const updatedUser = await prisma.user.update({
-                where: { id: parseInt(userId, 10) },
-                data: { password: newPassword },
-            });
-            res.json(updatedUser);
-            console.log("Password Updated");
-
-        } catch (error) {
-            console.error(error);
-            res.status(500).json({ error: 'Internal Server Error' });
+    updatePassword: [
+        hashUpdatePassword,
+        async (req, res) => {
+            try {
+                const userId = req.user.id;
+                const { oldPassword, newPassword } = req.body;
+        
+                const user = await prisma.user.findUnique({
+                    where: { id: userId },
+                    select: { password: true },
+                });
+        
+                const passwordMatch = await bcrypt.compare(oldPassword, user.password);
+        
+                if (!passwordMatch) {
+                    return res.status(401).json({ error: 'Invalid old password' });
+                }
+        
+                await prisma.user.update({
+                    where: { id: userId },
+                    data: { password: req.hashedPassword },
+                });
+        
+                res.status(200).json({ message: 'Password updated successfully' });
+            } catch (error) {
+                console.error('Error during updatePassword:', error);
+                res.status(500).json({ error: 'Internal server error' });
+            }
         }
-    },
+    ],
     changeUserStatus: async (req, res) => {try {
         const { userId } = req.params;
         const userIdInt = parseInt(userId, 10);
