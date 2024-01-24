@@ -76,7 +76,7 @@ const authenticateUser = async (req, res, next) => {
         req.user = {
             id: user.id,
             role: user.role,
-            newAccessToken: token, // Fix here
+            newAccessToken: token, 
         };
 
         next();
