@@ -10,7 +10,7 @@ const generateTokens = (userId, role, expiresIn = '2h', refreshExpiresIn = '7d')
 
     return { accessToken, refreshToken };
 };
-const generateVerificationToken = (userId, role, expiresIn = '5m') => {
+const generateVerificationToken = (userId, role, expiresIn = '1h') => {
     const verificationToken = jwt.sign({ userId, role }, VERIFICATION_SECRET, { expiresIn });
     return { verificationToken };
     };
@@ -27,13 +27,23 @@ const verifyToken = (token) => {
 };
 const verifyVerificationToken = (token) => {
     try {
+        if (!token) {
+            throw new Error('Token is missing.');
+        }
+
         const decoded = jwt.verify(token, VERIFICATION_SECRET);
+
+        if (!decoded) {
+            throw new Error('Invalid token.');
+        }
+
         return decoded;
     } catch (error) {
-        console.error('Token verification error:', error);
+        console.error('Token verification error:', error.message);
         return null;
     }
 };
+
 
 const verifyRefreshToken = (refreshToken) => {
     try {
