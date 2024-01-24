@@ -10,6 +10,7 @@ router.use(authenticateUser);
 
 router.post('/comment', userController.createComment);
 router.patch('/update-comment/:commentId', userController.updateComment);
+router.put('/update-password', userController.updatePassword);
 router.delete('/delete-comment/:commentId', userController.deleteComment);
 
 

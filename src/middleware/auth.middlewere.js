@@ -17,14 +17,19 @@ const authenticateUser = async (req, res, next) => {
         }
 
         const token = tokenParts[1];
-        console.log('Access Token:', token);
+        // console.log('Access Token:', token);
 
         let decoded;
 
         try {
             decoded = jwtUtils.verifyToken(token);
-            console.log('Decoded Access Token:', decoded);
-            req.user = decoded;
+            // console.log('Decoded Access Token:', decoded);
+
+            if (!decoded || !decoded.userId || !decoded.role) {
+                return res.status(401).json({ error: 'Unauthorized: Invalid token payload' });
+            }
+
+            req.user = { userId: decoded.userId, role: decoded.role };
         } catch (error) {
             console.error('Access token verification error:', error);
             return res.status(401).json({ error: 'Unauthorized: Invalid token' });

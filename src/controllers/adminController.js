@@ -201,27 +201,42 @@ const adminController = {
     deleteComment: async (req, res) => {
         try {
             const { commentId } = req.params;
-            const deletedComment = await prisma.comment.delete({
-                where: { id: parseInt(commentId, 10) },
+    
+            const existingComment = await prisma.comment.findUnique({
+                where: { id: parseInt(commentId) },
             });
-            console.log("Comment Deleted");
+    
+            if (!existingComment) {
+                return res.status(404).json({ error: 'Comment not found' });
+            }
+    
+            const deletedComment = await prisma.comment.delete({
+                where: { id: parseInt(commentId) },
+            });
+    
+            console.log('Comment Deleted');
             return res.json(deletedComment);
         } catch (error) {
             console.error(error);
             res.status(500).json({ error: 'Internal Server Error' });
         }
     },
+    
     deletePost: async (req, res) => {
         try {
             const { articleId } = req.params;
             const deletePost = await prisma.article.delete({
                 where: { id: parseInt(articleId, 10) },
             });
-            console.log("Post Deleted ");
-
+            
+            console.log("Post Deleted");
             res.json(deletePost);
         } catch (error) {
-            console.error(error);
+            // console.error(error);
+    
+            if (error.code === 'P2025') {
+                return res.status(404).json({ error: 'Post not found. Unable to delete.' });
+            }
             res.status(500).json({ error: 'Internal Server Error' });
         }
     },
@@ -230,25 +245,25 @@ const adminController = {
         hashUpdatePassword,
         async (req, res) => {
             try {
-                const userId = req.user.id;
+                const userId = req.user.userId; 
                 const { oldPassword, newPassword } = req.body;
-        
+    
                 const user = await prisma.user.findUnique({
                     where: { id: userId },
                     select: { password: true },
                 });
-        
+    
                 const passwordMatch = await bcrypt.compare(oldPassword, user.password);
-        
+    
                 if (!passwordMatch) {
                     return res.status(401).json({ error: 'Invalid old password' });
                 }
-        
+    
                 await prisma.user.update({
                     where: { id: userId },
                     data: { password: req.hashedPassword },
                 });
-        
+    
                 res.status(200).json({ message: 'Password updated successfully' });
             } catch (error) {
                 console.error('Error during updatePassword:', error);
@@ -256,6 +271,7 @@ const adminController = {
             }
         }
     ],
+    
     changeUserStatus: async (req, res) => {try {
         const { userId } = req.params;
         const userIdInt = parseInt(userId, 10);

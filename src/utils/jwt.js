@@ -10,7 +10,7 @@ const generateTokens = (userId, role, expiresIn = '2h', refreshExpiresIn = '7d')
 
     return { accessToken, refreshToken };
 };
-const generateVerificationToken = (userId, role, expiresIn = '1h') => {
+const generateVerificationToken = (userId, role, expiresIn = '10m') => {
     const verificationToken = jwt.sign({ userId, role }, VERIFICATION_SECRET, { expiresIn });
     return { verificationToken };
     };

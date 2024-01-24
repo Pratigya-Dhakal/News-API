@@ -20,7 +20,7 @@ router.get('/get-category', adminController.getAllCategory);
 router.post('/create-user', adminController.createUser);
 router.patch('/change-user-status/:userId', adminController.changeUserStatus);
 router.get('/get-users', adminController.getAllUsers);
-router.patch('/update-password/:userId', adminController.updatePassword);
+router.put('/update-password', adminController.updatePassword);
 
 //post
 router.get('/view-posts', adminController.viewPosts);
