@@ -14,7 +14,7 @@ const userController = {
         async (req, res) => {
             try {
                 const { email, password } = req.body;
-
+    
                 const user = await prisma.user.findUnique({
                     where: { email },
                     select: {
@@ -24,24 +24,29 @@ const userController = {
                         role: true,
                         status: true,
                         password: true,
+                        verify: true, 
                     },
                 });
-
+    
                 if (!user) {
                     return res.status(401).json({ error: 'Invalid email' });
                 }
-
+    
                 if (user.role !== 'USER') {
                     return res.status(403).json({ error: 'Access Denied. Only USERS are allowed to log in from this route.' });
                 }
-
+    
+                if (user.verify !== 'VERIFIED') {
+                    return res.status(401).json({ error: 'Email not verified. Please verify your email before logging in.' });
+                }
+    
                 const passwordMatch = await bcrypt.compare(password, user.password);
                 if (!passwordMatch) {
                     return res.status(401).json({ error: 'Invalid Password' });
                 }
-
+    
                 const { accessToken, refreshToken } = generateTokens(user.id, user.role);
-
+    
                 const { id, username, role, status } = user;
                 const responseData = {
                     message: 'Login successful',
@@ -49,7 +54,7 @@ const userController = {
                     accessToken,
                     refreshToken,
                 };
-
+    
                 res.status(200).json(responseData);
             } catch (error) {
                 console.error('Error during login:', error);
@@ -57,6 +62,7 @@ const userController = {
             }
         }
     ],
+    
     createComment: async (req, res) => {
         try {
             const { content, articleId } = req.body;

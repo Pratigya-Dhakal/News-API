@@ -23,6 +23,7 @@ const authorController = {
                         role: true,
                         status: true,
                         password: true,
+                        verify: true,
                     },
                 });
     
@@ -32,6 +33,10 @@ const authorController = {
     
                 if (user.role !== 'AUTHOR') {
                     return res.status(403).json({ error: 'Access Denied. Only AUTHORS are allowed to log in from this route.' });
+                }
+    
+                if (user.verify !== 'VERIFIED') {
+                    return res.status(401).json({ error: 'Email not verified. Please verify your email before logging in.' });
                 }
     
                 const passwordMatch = await bcrypt.compare(password, user.password);
@@ -57,6 +62,7 @@ const authorController = {
             }
         }
     ],
+    
     createArticle: async (req, res) => {
         const uploadMiddleware = upload.single('imageData');
         

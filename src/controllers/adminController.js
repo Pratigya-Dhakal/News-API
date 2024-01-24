@@ -129,7 +129,7 @@ const adminController = {
             }
         },
     ],
-    loginAdmin :[
+    loginAdmin: [
         loginValidationMiddleware,
         async (req, res) => {
             try {
@@ -144,6 +144,7 @@ const adminController = {
                         role: true,
                         status: true,
                         password: true,
+                        verify: true, // Include the 'verify' field in the selection
                     },
                 });
     
@@ -155,11 +156,16 @@ const adminController = {
                     return res.status(403).json({ error: 'Access Denied. Only ADMINs are allowed to log in from this route.' });
                 }
     
+                // Check if the user is verified
+                if (user.verify !== 'VERIFIED') {
+                    return res.status(401).json({ error: 'Email not verified. Please verify your email before logging in.' });
+                }
+    
                 const passwordMatch = await bcrypt.compare(password, user.password);
                 if (!passwordMatch) {
                     return res.status(401).json({ error: 'Invalid Password' });
                 }
-                
+    
                 const { accessToken, refreshToken } = jwtUtils.generateTokens(user.id, user.role);
     
                 const { id, username, role, status } = user;
@@ -176,6 +182,7 @@ const adminController = {
             }
         },
     ],
+    
 
     viewPosts: async (req, res) => {
         try {
@@ -290,7 +297,8 @@ const adminController = {
             console.error(error);
             res.status(500).json({ error: 'Internal Server Error' });
         }
-    },
+    },   
 };
+
 
 module.exports = adminController;
