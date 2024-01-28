@@ -67,6 +67,10 @@ const authenticateAuthor = async (req, res, next) => {
             where: {
                 id: decoded.userId,
             },
+            select: {
+                id: true,
+                role: true,
+            },
         });
 
         if (!user || user.role !== 'AUTHOR') {
