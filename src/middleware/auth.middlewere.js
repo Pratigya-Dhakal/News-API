@@ -37,10 +37,16 @@ const authenticateUser = async (req, res, next) => {
 
         const { userId, role } = req.user;
 
-        const user = await prisma.user.findUnique({ where: { id: userId } });
-
-        if (!user || user.role !== role) {
-            return res.status(401).json({ error: 'Unauthorized: User not found or invalid role' });
+        const user = await prisma.user.findUnique({ where: { id: userId } ,
+            select: {
+                id: true,
+                role: true,
+                verify: true,
+            },});
+        
+        if (!user || user.role !== 'ADMIN') {
+            console.error('Unauthorized: User not found or not a ADMIN:', user);
+            return res.status(403).json({ error: 'Access Denied' });
         }
 
         if (user.verify !== 'VERIFIED') {
