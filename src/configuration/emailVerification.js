@@ -1,6 +1,8 @@
-const prisma = require('@prisma/client');
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
 const jwtUtils = require('../utils/jwt');
-const  verifyUser =  async (req, res) => {
+
+const verifyUser = async (req, res) => {
     const { token } = req.params;
 
     try {
@@ -21,6 +23,8 @@ const  verifyUser =  async (req, res) => {
         if (user.verify === 'VERIFIED') {
             return res.status(400).send('User already verified.');
         }
+
+        // Only update if the user is not already verified
         if (user.verify === 'NOTVERIFIED') {
             await prisma.user.update({
                 where: { id: decoded.userId },
@@ -33,9 +37,11 @@ const  verifyUser =  async (req, res) => {
         }
     } catch (error) {
         console.error('Error verifying user:', error);
+
         if (error.name === 'TokenExpiredError') {
             return res.status(400).send('Verification link has expired.');
         }
+
         res.status(500).json({ error: 'Internal Server Error' });
     }
 };
