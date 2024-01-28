@@ -1,6 +1,6 @@
-#News Api using Nodejs Prisma Mysql Express JWT
-##Welcome to the News Api Project 
->To run this application in your . Here is the steps below:
+# News Api using Nodejs Prisma Mysql Express JWT
+## Welcome to the News Api Project 
+*** To run this application in your . Here is the steps below:***
 1. First do the git clone
 >git clone https://github.com/Pratigya-Dhakal/News-API.git
 2. Second Install Packages
